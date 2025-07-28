@@ -1,5 +1,64 @@
 // Data constants are now imported from constants.js
 
+// Authentication Manager
+class AuthManager {
+    constructor() {
+        this.users = window.authSystem.users;
+        this.sessionKey = window.authSystem.sessionKey;
+        this.isLoggedIn = false;
+        this.currentUser = null;
+        this.init();
+    }
+
+    init() {
+        this.checkExistingSession();
+    }
+
+    checkExistingSession() {
+        const session = localStorage.getItem(this.sessionKey);
+        if (session) {
+            try {
+                const userData = JSON.parse(session);
+                if (userData && userData.username) {
+                    this.currentUser = userData;
+                    this.isLoggedIn = true;
+                    return true;
+                }
+            } catch (e) {
+                localStorage.removeItem(this.sessionKey);
+            }
+        }
+        return false;
+    }
+
+    login(username, password) {
+        const user = this.users.find(u => u.username === username && u.password === password);
+        if (user) {
+            this.currentUser = { username: user.username, role: user.role };
+            this.isLoggedIn = true;
+            localStorage.setItem(this.sessionKey, JSON.stringify(this.currentUser));
+            return { success: true, user: this.currentUser };
+        }
+        return { success: false, error: "Nieprawidłowe dane logowania" };
+    }
+
+    logout() {
+        this.currentUser = null;
+        this.isLoggedIn = false;
+        localStorage.removeItem(this.sessionKey);
+    }
+
+    getUserInfo() {
+        return this.currentUser;
+    }
+
+    isAuthenticated() {
+        return this.isLoggedIn;
+    }
+}
+
+// Removed Login Modal Component - now using only console login
+
 // DateTime component
 class DateTime {
     constructor() {
@@ -8,11 +67,13 @@ class DateTime {
         this.dateElement = null;
         this.intervalId = null;
         this.themeToggle = null;
+        this.authManager = null;
         this.init();
     }
 
     init() {
         this.themeToggle = new ThemeToggle();
+        this.authManager = new AuthManager();
         this.render();
         this.startClock();
     }
@@ -61,8 +122,25 @@ class DateTime {
         const container = document.createElement("div");
         container.className = "datetime-container";
 
+        // Always show theme toggle and navigation - no authentication required
+        const controlsInfo = `<div class="user-info">
+            <button class="theme-toggle" onclick="toggleUserTheme()" id="userThemeToggle">
+                <span class="theme-toggle-icon">
+                    <i class="fas ${this.themeToggle.isDark ? 'fa-sun' : 'fa-moon'}"></i>
+                </span>
+            </button>
+            <button class="datetime-nav-button" onclick="navigateToSubpage()">
+                <i class="fas fa-bars"></i>
+            </button>
+            <button class="datetime-nav-button" onclick="showLoginConsole()" title="Open Login Console (Ctrl+L)">
+                <i class="fas fa-terminal"></i>
+            </button>
+        </div>
+        
+        `;
+
         container.innerHTML = `
-           
+           ${controlsInfo}
             <div class="datetime-content">
                 <div class="datetime-icon">
                     <i class="fas fa-clock"></i>
@@ -71,15 +149,8 @@ class DateTime {
                     <div class="datetime-time">${this.formatTime(now)}</div>
                     <div class="datetime-date">${this.formatDate(now)}</div>
                 </div>
-                <button class="datetime-nav-button" onclick="navigateToSubpage()">
-                    <i class="fas fa-bars"></i>
-                </button>
             </div>
         `;
-
-        // Add theme toggle button to the datetime container
-        const themeButton = this.themeToggle.render();
-        container.appendChild(themeButton);
 
         this.dateTimeElement = container;
         this.timeElement = container.querySelector(".datetime-time");
@@ -120,6 +191,7 @@ class Footer {
                         <i class="fas fa-info-circle ml-2"></i>
                     </a>
                 </div>
+                
                 <div class="footer-section">
                     <span class=" footer-info-copyright">© ${this.currentYear} All rights reserved</span>
                 </div>
@@ -384,6 +456,39 @@ function createGroupCard(data) {
 // Main App initialization
 function initializeApp() {
     const root = document.getElementById("root");
+    if (!root) return;
+
+    // Initialize theme first (before anything else)
+    initializeTheme();
+
+    // Always create dashboard - authentication through console only
+    createDashboard();
+}
+
+// Initialize theme system
+function initializeTheme() {
+    const savedTheme = localStorage.getItem("theme");
+    let isDarkMode = false;
+
+    if (savedTheme) {
+        isDarkMode = savedTheme === "dark";
+    } else {
+        isDarkMode = document.documentElement.hasAttribute("dark-theme");
+    }
+
+    // Apply the theme
+    if (isDarkMode) {
+        document.documentElement.setAttribute("dark-theme", "");
+    } else {
+        document.documentElement.removeAttribute("dark-theme");
+    }
+}
+
+// Removed showLoginModal function - now using only console login
+
+function createDashboard() {
+    const root = document.getElementById("root");
+    if (!root) return;
 
     // Create datetime component (includes theme toggle)
     const dateTime = new DateTime();
@@ -442,11 +547,77 @@ function initializeApp() {
     root.appendChild(appContainer);
 }
 
+// Global logout function
+function handleLogout() {
+    const authManager = new AuthManager();
+    authManager.logout();
+    location.reload();
+}
+
+// Removed toggleLoginTheme function - no longer needed
+
+// Global theme toggle function for user info
+function toggleUserTheme() {
+    const currentTheme = localStorage.getItem("theme") || "light";
+    const newTheme = currentTheme === "dark" ? "light" : "dark";
+
+    // Save to localStorage
+    localStorage.setItem("theme", newTheme);
+
+    // Apply the theme
+    if (newTheme === "dark") {
+        document.documentElement.setAttribute("dark-theme", "");
+    } else {
+        document.documentElement.removeAttribute("dark-theme");
+    }
+
+    // Update all theme toggle buttons
+    updateAllThemeButtons(newTheme);
+}
+
+// Update all theme toggle buttons
+function updateAllThemeButtons(theme) {
+    const isDark = theme === "dark";
+
+    // Update login theme button
+    const loginButton = document.getElementById("loginThemeToggle");
+    if (loginButton) {
+        const icon = loginButton.querySelector("i");
+        if (icon) {
+            icon.className = `fas ${isDark ? 'fa-sun' : 'fa-moon'}`;
+        }
+    }
+
+    // Update user theme button
+    const userButton = document.getElementById("userThemeToggle");
+    if (userButton) {
+        const icon = userButton.querySelector("i");
+        if (icon) {
+            icon.className = `fas ${isDark ? 'fa-sun' : 'fa-moon'}`;
+        }
+    }
+}
+
 // Function to navigate to subpage
 function navigateToSubpage() {
     const modalContent = `
         <h3>Polecane Dodatki</h3>
         <p>Przydatne rozszerzenia do przeglądarek:</p>
+        
+        <div class="info-section">
+            <h3>Jak zainstalować dodatek:</h3>
+            <ul>
+                <li>Kliknij na ikonę przeglądarki przy wybranym dodatku</li>
+                <li>Zostaniesz przekierowany do sklepu z rozszerzeniami</li>
+                <li>Kliknij przycisk <span class="highlight">"Dodaj do przeglądarki"</span></li>
+                <li>Potwierdź instalację w oknie dialogowym</li>
+            </ul>
+        </div>
+
+        <div class="warning-section">
+            <p>Instaluj tylko dodatki z oficjalnych sklepów przeglądarek dla swojego bezpieczeństwa.</p>
+        </div>
+        
         <div class="modal-nav-grid">
             <div class="modal-nav-item addon-item">
                 <div class="corner top-left"></div>
@@ -596,10 +767,62 @@ function navigateToSubpage() {
                 </div>
             </div>
         </div>
+
+        <div class="info-section">
+            <h3>Przydatne informacje:</h3>
+            <ul>
+                <li><span class="highlight">uBlock Origin</span> - Najlepszy bloker reklam, redukuje zużycie danych i przyspiesza przeglądanie</li>
+                <li><span class="highlight">Dark Reader</span> - Automatycznie zmienia jasne strony na ciemne, oszczędza baterie</li>
+                <li><span class="highlight">Stylus</span> - Pozwala na personalizację wyglądu stron internetowych</li>
+                <li><span class="highlight">Tampermonkey</span> - Umożliwia uruchamianie skryptów modyfikujących strony</li>
+            </ul>
+        </div>
     `;
 
     const modal = new Modal("Navigation Options", modalContent, true);
     modal.open();
+
+    // Add click handlers for addon items after modal opens
+    setTimeout(() => {
+        const addonItems = document.querySelectorAll('.addon-item');
+        const modalBody = document.querySelector('.modal-body');
+
+        addonItems.forEach(item => {
+            item.addEventListener('click', function (e) {
+                // Don't trigger if clicking on browser badge
+                if (e.target.closest('.browser-badge')) {
+                    return;
+                }
+
+                // Prevent event from bubbling to modal body
+                e.stopPropagation();
+
+                // Toggle active class
+                const isActive = this.classList.contains('active');
+
+                // Close all other addon items
+                addonItems.forEach(otherItem => {
+                    otherItem.classList.remove('active');
+                });
+
+                // Toggle current item
+                if (!isActive) {
+                    this.classList.add('active');
+                }
+            });
+        });
+
+        // Close all browser selections when clicking outside
+        if (modalBody) {
+            modalBody.addEventListener('click', function (e) {
+                if (!e.target.closest('.addon-item')) {
+                    addonItems.forEach(item => {
+                        item.classList.remove('active');
+                    });
+                }
+            });
+        }
+    }, 100);
 }
 
 // Function to open service in new tab
@@ -611,29 +834,225 @@ function openService(url, serviceName) {
 // Function to open privacy modal
 function openPrivacyModal() {
     const modalContent = `
-        <h3>Informacje ogólne</h3>
-        <p>Niniejsza polityka prywatności określa zasady funkcjonowania korporacyjnej aplikacji pulpitu nawigacyjnego. Serwis nie zbiera ani nie przetwarza żadnych danych osobowych użytkowników, co zapewnia pełną ochronę prywatności.</p>
+        <h3>Polityka Prywatności</h3>
+        <p>Niniejsza polityka prywatności określa zasady funkcjonowania korporacyjnej aplikacji pulpitu nawigacyjnego.</p>
         
-        <h3>Pliki cookies</h3>
-        <p>Serwis wykorzystuje wyłącznie niezbędne pliki cookies techniczne, które są wymagane do prawidłowego działania strony. Te pliki cookies nie służą do zbierania żadnych danych osobowych ani do śledzenia użytkowników, co gwarantuje bezpieczeństwo korzystania z serwisu.</p>
+        <div class="info-section">
+            <h3>Informacje ogólne:</h3>
+            <p>Serwis nie zbiera ani nie przetwarza żadnych danych osobowych użytkowników, co zapewnia pełną ochronę prywatności.</p>
+        </div>
         
-        <h3>Brak zbierania danych</h3>
-        <p>Serwis:</p>
-        <ul>
-            <li>Nie zbiera danych osobowych</li>
-            <li>Nie wymaga rejestracji</li>
-            <li>Nie prowadzi newslettera</li>
-            <li>Nie śledzi zachowań użytkowników</li>
-            <li>Nie wykorzystuje narzędzi analitycznych</li>
-        </ul>
+        <div class="info-section">
+            <h3>Pliki cookies:</h3>
+            <p>Serwis wykorzystuje wyłącznie niezbędne pliki cookies techniczne, które są wymagane do prawidłowego działania strony. Te pliki cookies nie służą do zbierania żadnych danych osobowych ani do śledzenia użytkowników.</p>
+        </div>
         
-        <h3>Zmiany w polityce prywatności</h3>
-        <p>Administrator zastrzega sobie prawo do zmiany niniejszej polityki prywatności w dowolnym czasie. O wszelkich zmianach użytkownicy będą informowani z odpowiednim wyprzedzeniem, aby mogli dostosować się do nowych zasad.</p>
+        <div class="info-section">
+            <h3>Brak zbierania danych:</h3>
+            <p>Serwis:</p>
+            <ul>
+                <li><span class="highlight">Nie zbiera</span> danych osobowych</li>
+                <li><span class="highlight">Nie wymaga</span> rejestracji</li>
+                <li><span class="highlight">Nie prowadzi</span> newslettera</li>
+                <li><span class="highlight">Nie śledzi</span> zachowań użytkowników</li>
+                <li><span class="highlight">Nie wykorzystuje</span> narzędzi analitycznych</li>
+            </ul>
+        </div>
+
+        <div class="warning-section">
+            <p>Wszystkie dane są przechowywane lokalnie w przeglądarce i nie są przekazywane do żadnych zewnętrznych serwisów.</p>
+        </div>
         
-        <p><strong>Ostatnia aktualizacja:</strong> ${new Date().toLocaleDateString('pl-PL')}</p>
+        <div class="info-section">
+            <h3>Zmiany w polityce prywatności:</h3>
+            <p>Administrator zastrzega sobie prawo do zmiany niniejszej polityki prywatności w dowolnym czasie. O wszelkich zmianach użytkownicy będą informowani z odpowiednim wyprzedzeniem.</p>
+        </div>
+        
+        <p><strong>Data:</strong> ${new Date().toLocaleDateString('pl-PL')}</p>
     `;
     const modal = new Modal("Privacy Policy", modalContent, true);
     modal.open();
+}
+
+// Function to open help modal
+function openHelpModal() {
+    const modalContent = `
+        <h3>Pomoc - Logowanie</h3>
+        <p>Witamy w sekcji pomocy Corporate App Dashboard. Znajdziesz tutaj informacje dotyczące logowania do systemu.</p>
+        
+        <div class="info-section">
+            <h3>Jak się zalogować:</h3>
+            <ul>
+                <li><strong>Nazwa użytkownika:</strong> Wprowadź swoją nazwę użytkownika w pierwszym polu</li>
+                <li><strong>Hasło:</strong> Wprowadź hasło w drugim polu</li>
+                <li><strong>Logowanie:</strong> Kliknij przycisk <span class="highlight">"Zaloguj się"</span> lub naciśnij Enter</li>
+                <li><strong>Motyw:</strong> Użyj przycisku <i class="fas fa-moon"></i>/<i class="fas fa-sun"></i> aby zmienić motyw</li>
+            </ul>
+        </div>
+
+        <div class="info-section">
+            <h3>Problemy z logowaniem:</h3>
+            <ul>
+                <li>Sprawdź czy <span class="highlight">caps lock</span> nie jest włączony</li>
+                <li>Upewnij się, że używasz prawidłowych danych logowania</li>
+                <li>Odśwież stronę (F5 lub Ctrl+R) i spróbuj ponownie</li>
+                <li>Wyczyść pamięć podręczną przeglądarki</li>
+                <li>Skontaktuj się z administratorem systemu</li>
+            </ul>
+        </div>
+
+        <div class="warning-section">
+            <p>Dane logowania są przechowywane lokalnie w przeglądarce i nie są wysyłane do żadnych stron trzecich.</p>
+        </div>
+        
+        <div class="info-section">
+            <h3>Bezpieczeństwo:</h3>
+            <ul>
+                <li>Nie udostępniaj swoich danych logowania innym osobom</li>
+                <li>Wyloguj się po zakończeniu pracy</li>
+                <li>Zgłoś podejrzane aktywności administratorowi</li>
+            </ul>
+        </div>
+        
+        <p><strong>Wersja systemu:</strong> 1.0.0</p>
+        <p><strong>Data:</strong> ${new Date().toLocaleDateString('pl-PL')}</p>
+    `;
+    const modal = new Modal("Pomoc - Logowanie", modalContent, true);
+    modal.open();
+}
+
+// Console Login System
+let loginConsole = null;
+
+function createLoginConsole() {
+    if (loginConsole) return;
+
+    loginConsole = document.createElement('div');
+    loginConsole.className = 'login-console hidden';
+    loginConsole.innerHTML = `
+        <div class="console-header">
+            <span class="console-title">
+                <i class="fas fa-terminal"></i>
+                Login Console - Corporate Dashboard
+            </span>
+            <button class="console-close" onclick="hideLoginConsole()">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="console-body">
+            <div class="console-prompt">
+                <span class="prompt-symbol">$</span>
+                <span class="prompt-text">Please enter your credentials to access AI Link Hub</span>
+            </div>
+            <form class="console-form" id="consoleLoginForm">
+                <div class="console-input-group">
+                    <span class="input-label">username:</span>
+                    <input type="text" id="consoleUsername" name="username" required autocomplete="username" spellcheck="false">
+                </div>
+                <div class="console-input-group">
+                    <span class="input-label">password:</span>
+                    <input type="password" id="consolePassword" name="password" required autocomplete="current-password">
+                </div>
+                <div class="console-actions">
+                    <button type="submit" class="console-btn">
+                        <i class="fas fa-arrow-right"></i>
+                        Execute Login
+                    </button>
+                </div>
+            </form>
+            <div class="console-output" id="consoleOutput"></div>
+            <div class="console-help">
+                <div class="help-line">Available commands:</div>
+                <div class="help-line">• login - authenticate user</div>
+                <div class="help-line">• clear - clear console output</div>
+                <div class="help-line">• exit - close console (Esc)</div>
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(loginConsole);
+
+    // Setup form handler
+    const form = loginConsole.querySelector('#consoleLoginForm');
+    form.addEventListener('submit', handleConsoleLogin);
+
+    // Setup keyboard shortcuts
+    setupConsoleKeyboardShortcuts();
+}
+
+function showLoginConsole() {
+    if (!loginConsole) createLoginConsole();
+
+    loginConsole.classList.remove('hidden');
+    loginConsole.classList.add('active');
+
+    // Focus on username input
+    const usernameInput = loginConsole.querySelector('#consoleUsername');
+    setTimeout(() => usernameInput.focus(), 100);
+
+    // Clear previous output
+    const output = loginConsole.querySelector('#consoleOutput');
+    output.innerHTML = '';
+}
+
+function hideLoginConsole() {
+    if (loginConsole) {
+        loginConsole.classList.remove('active');
+        loginConsole.classList.add('hidden');
+    }
+}
+
+function handleConsoleLogin(e) {
+    e.preventDefault();
+
+    const formData = new FormData(e.target);
+    const username = formData.get('username');
+    const password = formData.get('password');
+    const output = document.getElementById('consoleOutput');
+
+    // Simulate authentication
+    const authManager = new AuthManager();
+    const result = authManager.login(username, password);
+
+    if (result.success) {
+        // Show success in console
+        output.innerHTML = `
+            <div class="output-line success">✓ Authentication successful</div>
+            <div class="output-line">User: ${result.user.username}</div>
+            <div class="output-line">Role: ${result.user.role}</div>
+            <div class="output-line">Redirecting to AI Link Hub...</div>
+            <div class="output-line loading">Opening new tab in 3 seconds...</div>
+        `;
+
+        // Open AI Link Hub in new tab after delay
+        setTimeout(() => {
+            window.open('https://devospanel.carrd.co/', '_blank');
+            hideLoginConsole();
+        }, 3000);
+
+    } else {
+        // Show error in console
+        output.innerHTML = `
+            <div class="output-line error">✗ Authentication failed</div>
+            <div class="output-line error">${result.error}</div>
+            <div class="output-line">Please try again...</div>
+        `;
+    }
+}
+
+function setupConsoleKeyboardShortcuts() {
+    document.addEventListener('keydown', (e) => {
+        // Ctrl+L to open login console
+        if (e.ctrlKey && e.key === 'l') {
+            e.preventDefault();
+            showLoginConsole();
+        }
+
+        // Escape to close console
+        if (e.key === 'Escape' && loginConsole && loginConsole.classList.contains('active')) {
+            hideLoginConsole();
+        }
+    });
 }
 
 // Initialize the app when DOM is loaded
