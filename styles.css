@@ -88,6 +88,7 @@
   -webkit-user-select: none;
   -moz-user-select: none;
   -ms-user-select: none;
+  font-family: var(--font-family-mono);
 }
 
 /* ===== Scrollbar CSS ===== */
@@ -234,17 +235,20 @@ body {
 
 /* Group Card */
 .group-card {
-  background: var(--card-bg);
+  background: rgba(var(--glass-bg), 0.3);
   backdrop-filter: var(--backdrop-filter);
   border: 1px solid var(--glass-border);
-  padding: 1rem 1rem;
+  padding: 0.5rem;
   border-radius: 0;
   transition: all 0.3s ease-in-out;
   position: relative;
   margin: 0.1rem;
 }
 
-
+.group-card:hover {
+  border-color: rgba(var(--orange-rgb), 0.1);
+  background-color: rgba(var(--glass-bg), 0.5);
+}
 
 /* Corner System */
 .corner {
@@ -320,12 +324,18 @@ body {
   /* gap-4 */
 }
 
+.main-grid {
+  backdrop-filter: var(--backdrop-filter);
+  padding: 0.5rem;
+  border-left: 1px solid var(--glass-border);
+  border-right: 1px solid var(--glass-border);
+}
 
 /* Link Button */
 .link-button {
   background: var(--glass);
   backdrop-filter: var(--backdrop-filter);
-  border: 1px solid var(--glass-border);
+  border: 1px solid rgba(var(--glass-bg-color), 0.1);
   padding: 1rem;
   display: flex;
   align-items: center;
@@ -342,13 +352,12 @@ body {
 }
 
 .link-button:hover {
-  border-color: var(--glass-border-orange);
+  border-color: rgba(var(--orange-rgb), 0.2);
   background-color: var(--glass-hover);
 }
 
 .link-button:active {
   opacity: 0.8;
-  border-color: var(--glass-border-hover);
   background-color: var(--glass-border);
   transition: all 0.1s;
 }
@@ -374,9 +383,9 @@ body {
 .link-button-title {
   font-weight: 500;
   font-size: 1.2rem;
-  line-height: 1.25rem;
+  line-height: 1rem;
   color: var(--text-color);
-  letter-spacing: 0.050em;
+  letter-spacing: 0.005em;
   text-transform: uppercase;
   transition: all 0.3s ease;
 }
@@ -424,9 +433,9 @@ body {
   top: 50%;
   right: 1.5rem;
   transform: translateY(-50%);
-  background-color: var(--glass);
+  background: rgba(var(--glass-bg), 0.3);
   backdrop-filter: var(--backdrop-filter);
-  border: 1px solid var(--glass-border);
+  border: 1px solid rgba(var(--glass-bg-color), 0.1);
   border-radius: 0;
   padding: 0.5rem;
   display: flex;
@@ -458,8 +467,8 @@ body {
 }
 
 .theme-toggle:hover {
-  background-color: var(--glass-hover);
-  border-color: var(--glass-border-hover);
+  background: rgba(var(--glass-bg), 0.1);
+  border-color: rgba(var(--glass-bg-color), 0.2);
 
 }
 
@@ -497,9 +506,9 @@ body {
 
 /* DateTime Component Styles */
 .datetime-container {
-  background: var(--glass);
+  background: rgba(var(--glass-bg), 0.3);
   backdrop-filter: var(--backdrop-filter);
-  border: 1px solid var(--glass-border);
+  border: 1px solid rgba(var(--glass-bg-color), 0.1);
   border-radius: 0;
   padding: 1.5rem;
   position: relative;
@@ -541,8 +550,8 @@ body {
   align-items: center;
   gap: 0.5rem;
   padding: 0.5rem 1rem;
-  background: var(--glass);
-  border: 1px solid var(--glass-border);
+  background: rgba(var(--glass-bg), 0.5);
+  border: 1px solid rgba(var(--glass-bg-color), 0.1);
   border-radius: 0;
   color: var(--glass-color-orange);
   font-family: var(--font-family-mono);
@@ -591,13 +600,13 @@ body {
 }
 
 .datetime-nav-button:hover {
-  background: var(--glass-hover);
+  background: rgba(var(--glass-bg), 0.1);
   border-color: rgba(var(--glass-bg-color), 0.2);
 
 }
 
 .datetime-nav-button:hover i {
-  color: var(--marker-gray);
+  color: var(--marker-black);
 
 
 }
@@ -613,20 +622,33 @@ body {
 }
 
 .datetime-nav-button i {
-  font-size: 0.75rem;
-  transition: transform 0.3s ease;
+  font-size: 1rem;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  -webkit-transition: all 0.3s ease;
+  -moz-transition: all 0.3s ease;
+  -ms-transition: all 0.3s ease;
+  -o-transition: all 0.3s ease;
 }
 
-
+.fas {
+  text-shadow: 0 1px 1px rgba(var(--bg-bg), 0.5);
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+  -webkit-transition: all 0.3s ease;
+  -moz-transition: all 0.3s ease;
+  -ms-transition: all 0.3s ease;
+  -o-transition: all 0.3s ease;
+}
 
 .datetime-nav-button span {
   letter-spacing: 0.1em;
 }
 
-.datetime-nav-button i {
-  font-size: 1.2rem;
-  transition: all 0.3s ease;
-}
+
 
 .datetime-nav-button:hover i {
   opacity: 0.8;
@@ -669,6 +691,8 @@ body {
   letter-spacing: 0.05em;
   opacity: 0.9;
   text-transform: capitalize;
+  position: relative;
+  z-index: -1;
 }
 
 
@@ -679,7 +703,7 @@ body {
 
 /* Footer Component Styles */
 .app-footer {
-  background: var(--glass);
+  background: rgba(var(--glass-bg), 0.3);
   backdrop-filter: var(--backdrop-filter);
   border: 1px solid var(--glass-border);
   border-radius: 0;
@@ -1238,6 +1262,7 @@ body {
   position: relative;
   border: 2px solid transparent;
   flex-direction: column;
+  border: 1px solid rgba(var(--glass-bg-color), 0.1) !important;
 }
 
 .browser-badge::after {
@@ -1603,9 +1628,6 @@ body {
   align-items: center;
   gap: 0.5rem;
   padding: 0.5rem 1rem;
-  background: var(--glass);
-  backdrop-filter: var(--backdrop-filter);
-  border: 1px solid var(--glass-border);
   border-radius: 0;
   margin-bottom: 1rem;
   font-size: 0.85rem;
@@ -2117,4 +2139,26 @@ body {
 
 .console-trigger i {
   font-size: 0.8rem;
+}
+
+
+/* Vertical Separator */
+.vertical-separator {
+  width: 1px;
+  height: 20px;
+  background: var(--glass-border);
+  margin: 0 0.5rem;
+  opacity: 0.6;
+}
+
+.vertical-separator.orange {
+  background: var(--glass-border-orange);
+}
+
+.vertical-separator.lime {
+  background: var(--marker-lime);
+}
+
+.vertical-separator.black {
+  background: var(--marker-black);
 }
