@@ -135,8 +135,15 @@ class DateTime {
             <button class="datetime-nav-button" onclick="showLoginConsole()" title="Open Login Console (Ctrl+L)">
                 <i class="fas fa-terminal"></i>
             </button>
+            <div class="vertical-separator orange"></div>
+            <button class="datetime-nav-button" onclick="window.open('https://playliveos.carrd.co/', '_blank')" title="Visit PlayLiveOS">
+                <i class="fas fa-play"></i>
+            </button>
+            <div class="vertical-separator orange"></div>
+            <button class="datetime-nav-button" onclick="window.open('https://w5e.carrd.co/', '_blank')" title="Lista Driverów">
+                <i class="fas fa-users"></i>
+            </button>
         </div>
-        
         `;
 
         container.innerHTML = `
